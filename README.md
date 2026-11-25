@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="assets/1_cover_card.jpg" alt="FocusPulse — Focus in 25. Burn out never." width="100%" />
-
 # ⚡ FocusPulse
 ### Focus in 25. Burn out never.
 
