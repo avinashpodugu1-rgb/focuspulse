@@ -1,59 +1,98 @@
-# FocusPulse — Vibe-to-Product Launch Sprint
+<div align="center">
 
-![CI](https://github.com/avinashpodugu1-rgb/focuspulse/actions/workflows/ci.yml/badge.svg)
+<img src="assets/1_cover_card.jpg" alt="FocusPulse — Focus in 25. Burn out never." width="100%" />
 
-**Chosen vertical:** Student & developer productivity — an AI study/work companion for people who struggle with context switching and burnout.
+# ⚡ FocusPulse
+### Focus in 25. Burn out never.
 
-## Quick start
-Open `index.html` in any browser. No build step, no dependencies, no network calls.
+**An energy-aware AI productivity & sprint companion engineered to eliminate context switching and scope creep.**
 
-```
-npm install     # dev tooling only (jsdom, ESLint)
-npm test        # 31 unit + UI tests
-npm run lint    # ESLint over index.html and tests
-npm run check   # lint + tests
-```
+[![CI](https://github.com/avinashpodugu1-rgb/focuspulse/actions/workflows/ci.yml/badge.svg)](https://github.com/avinashpodugu1-rgb/focuspulse/actions/workflows/ci.yml)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Google_Cloud_Run-4285F4?style=flat&logo=google-cloud&logoColor=white)](https://focuspulse-398222261224.europe-west1.run.app/)
+[![Tests](https://img.shields.io/badge/Tests-31_Passing-brightgreen?style=flat)](#quality-assurance--testing)
+[![Zero Dependencies](https://img.shields.io/badge/Runtime_Dependencies-0-success?style=flat)](#architecture--tech-stack)
 
-## Repository layout
-| Path | Purpose |
-|---|---|
-| `index.html` | **Task B** — single-file responsive web app: hero, energy-aware planner, 25-minute timer, Parking Lot |
-| `system_prompt.md` | **Task A** — production-ready system prompt (240 words, under the 250 limit) |
-| `hero_copy_and_image_prompt.md` | **Task C** — hero copy and a 3D dark-mode image-generation prompt |
-| `prompts.md` | Exact prompts used and the iteration chain (prompt transparency) |
-| `tests/planner.test.js` | Unit tests for the planning logic, including invariants over every energy × task × deadline combination |
-| `tests/ui.test.js` | UI tests that drive the real `index.html` in jsdom (form, timer, Parking Lot, accessibility, security markup) |
-| `eslint.config.js`, `.editorconfig` | Lint rules (incl. the JS inside `index.html`) and editor consistency |
-| `.github/workflows/ci.yml` | Runs lint and tests on every push |
-| `Dockerfile` | Serves `index.html` with nginx on port 8080 (Cloud Run ready) |
+[🚀 Launch Live App](https://focuspulse-398222261224.europe-west1.run.app/) • [🖼️ Product Walkthrough](#product-walkthrough--screenshots) • [✨ Core Features](#core-features) • [🗂️ Repository Structure](#repository-architecture)
 
-## Approach and logic
-1. **Energy → strategy.** Low gets a gentle tone and 3 tiny steps starting with a 3-minute setup win. Medium gets a plan/build/check rhythm. High attacks the hardest part first.
-2. **One sprint, no scope creep.** Every plan is capped at 25 minutes. Ideas that appear mid-sprint go to a Parking Lot instead of expanding the plan.
-3. **Edge cases.** Impossible or tight deadlines give an honest, smaller slice plus advice to cut scope or ask for an extension. Burnout wording triggers a 5-minute break with no added work. Empty task or missing energy asks for the missing input. Oversized tasks are shrunk to one slice with "next sprints" listed.
-4. **Coherence.** The app's planner implements the same rules as `system_prompt.md`. Hero copy and image prompt share the app's palette (`#0B0D14`, `#7C5CFF`, `#22D3EE`).
+</div>
 
-## How it works
-1. Enter one task, choose Low / Medium / High energy, optionally add minutes until the deadline.
-2. Get an instant micro-plan with per-step minutes.
-3. Start the sprint: the timer highlights the current step; park distractions as they come.
-4. At the end you get a break prompt and your parked ideas are waiting.
+---
 
-## Architecture (inside `index.html`)
-- **Core** (pure functions, no DOM): `buildPlan` (composed from `buildBreakPlan`, `buildNote`, `allocate`, `classify`, `parseDeadline`), plus `activeStepIndex` and `formatClock`. Named constants, frozen templates, JSDoc typedefs. Tested on its own.
-- **UI** (one IIFE): cached element lookups, a `setView` switcher, and small single-purpose functions (`readForm`, `renderPlan`, `updateClock`, `updateActiveStep`, `togglePause`, `buildDoneCard`, `onParkIdea`). The single-file requirement is kept, but core and UI are clearly separated.
+## 🎯 Overview
 
-## Quality notes
-- **Code quality:** core/UI separation, short single-purpose functions, named constants instead of magic numbers, JSDoc typedefs, `'use strict'`, ESLint (`no-var`, `prefer-const`, `eqeqeq`, `no-shadow`, `no-unused-vars`) enforced in CI, `.editorconfig`.
-- **Security:** strict Content-Security-Policy (`default-src 'none'`), no external resources, no `innerHTML`/`eval`, all user text written with `textContent`, input length caps, no storage and no network. Tests enforce these rules.
-- **Efficiency:** timer is wall-clock based (accurate even if the tab is throttled), the DOM is written only when the displayed second or active step changes, the progress bar uses a GPU-friendly `transform`, no libraries.
-- **Testing:** 31 automated tests, run in CI. They found and fixed a real edge case (minute allocation for deadlines shorter than the number of steps).
-- **Accessibility:** every control has a programmatic label (including the visually hidden Parking Lot label), fieldset/legend for energy, visible focus rings, skip link, `role="timer"`, polite live-region announcements, `aria-invalid` on errors, reduced-motion support, 48px touch targets, dark theme with high-contrast text, `noscript` message.
+Modern productivity tools often fail students and developers because they treat every hour of the day as equal—leading to over-scoped to-do lists, constant context switching, and cognitive burnout. 
 
-## Assumptions
-- The prototype runs the planner locally (deterministic, offline) so it works with no API key. The same rules live in `system_prompt.md` for use with any LLM.
-- Time comes from the system clock (`Date.now`), so the timer stays accurate if the tab is throttled.
-- Task text is capped at 200 characters; deadlines are capped at 10,000 minutes.
+**FocusPulse** solves this by adapting to your real-time mental bandwidth. Built in a **45-minute AI + prompt engineering sprint**, it scopes a single task down into an achievable **25-minute micro-sprint** calibrated to your current energy level, while actively shielding your focus from mid-sprint distractions[cite: 1, 2, 4].
 
-## License
-MIT
+---
+
+## 🖼️ Product Walkthrough & Screenshots
+
+### 1. Landing Experience & Single-Task Input
+Clean dark-mode hero interface introducing FocusPulse's core philosophy alongside a focused single-task prompt input (`"One task only. FocusPulse will shrink it to fit a single sprint."`)[cite: 3].
+
+<img src="assets/2_landing_hero.jpg" alt="FocusPulse Landing Hero and Task Input" width="100%" />
+
+---
+
+### 2. Energy-Matched Micro-Planning (`Low` | `Medium` | `High`)
+Select your current mental energy level and optional deadline constraint. FocusPulse dynamically breaks down your task into an actionable, time-boxed 3-step micro-plan paced to match how you actually feel[cite: 2].
+
+<img src="assets/3_low_energy_plan.png" alt="Energy-Matched Micro-Plan Output" width="100%" />
+
+---
+
+### 3. Active 25-Minute Sprint Timer & Mid-Sprint "Parking Lot"
+Once the sprint begins, a distraction-free 25:00 countdown tracks your active step while the **🅿️ Parking Lot** lets you capture sudden ideas (`"Redesign my notes template"`) without derailing your current flow state[cite: 1].
+
+<img src="assets/4_sprint_running.png" alt="Active Sprint Timer and Distraction Parking Lot" width="100%" />
+
+---
+
+## ✨ Core Features
+
+* **🔋 Energy-Aware Micro-Planning (`Low` | `Medium` | `High`):** Dynamically adjusts task scoping, pacing, and encouragement based on your real-time energy state[cite: 2, 3].
+* **⏳ Honest Deadline Calibration:** Evaluates optional deadline constraints (in minutes) and slices ambitious tasks into realistic deliverables rather than false promises[cite: 2, 3].
+* **⏱️ Distraction-Free 25-Minute Sprint Timer:** Clean execution timer (`Start`, `Pause`, `Stop`) paired with step-by-step time allocations (`4 min` → `14 min` → `7 min`).
+* **🅿️ Mid-Sprint "Parking Lot" (Scope-Creep Shield):** Offloads intrusive thoughts and side ideas mid-sprint so they wait until after your session[cite: 1, 3].
+* **🔒 Privacy-First & Zero-Latency:** Runs 100% client-side in the browser with zero external runtime dependencies and zero user data leaving the page[cite: 1, 2].
+
+---
+
+## 🗂️ Repository Architecture
+
+This repository houses the end-to-end **Vibe-to-Product Launch Sprint**, bridging prompt engineering, frontend engineering, and brand/product positioning:
+
+| File / Path | Component | Description |
+| :--- | :--- | :--- |
+| **[`index.html`](index.html)** | **Core Web Application** *(Task B)* | Single-file, responsive web app containing the hero interface, energy-aware micro-planner engine, 25-minute sprint timer, and interactive Parking Lot[cite: 1, 2, 3]. |
+| **[`system_prompt.md`](system_prompt.md)** | **AI System Prompt** *(Task A)* | Production-grade, constraint-tested AI system prompt engineered at **240 words** (strictly optimized under a 250-word token budget). |
+| **[`hero_copy_and_image_prompt.md`](hero_copy_and_image_prompt.md)** | **Product Copy & Visual Direction** *(Task C)* | High-converting landing page hero copy paired with a structured 3D dark-mode image-generation prompt for brand visual assets. |
+| **`assets/`** | **Visual Media & UI Captures** | Cover card (`1_cover_card.jpg`) and full end-to-end UI walkthrough screenshots (`2_landing_hero.jpg`, `3_low_energy_plan.png`, `4_sprint_running.png`)[cite: 1, 2, 3, 4]. |
+
+---
+
+## 🚀 Quick Start & Local Development
+
+### 1. Run the App Instantly
+Because FocusPulse has **zero runtime dependencies** and requires no build step, simply open `index.html` in any modern web browser—or launch the **[Live Cloud Run Deployment](https://focuspulse-398222261224.europe-west1.run.app/)**.
+
+### 2. Local Development & Verification
+To run the automated test suite and code quality checks locally:
+
+```bash
+# Clone the repository
+git clone [https://github.com/avinashpodugu1-rgb/focuspulse.git](https://github.com/avinashpodugu1-rgb/focuspulse.git)
+cd focuspulse
+
+# Install development tooling only (jsdom, ESLint)
+npm install
+
+# Run all 31 unit and UI tests
+npm test
+
+# Run ESLint across index.html and test suites
+npm run lint
+
+# Run full CI verification (lint + tests)
+npm run check
