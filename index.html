@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>FocusPulse — Focus in 25. Burn out never.</title>
+<meta name="description" content="FocusPulse reads your energy and turns any task into one doable 25-minute sprint.">
+<style>
+:root{--bg:#0b0d14;--panel:#141824;--panel2:#1a2030;--text:#eef1f8;--muted:#a3adc2;--line:#27304a;--accent:#7c5cff;--accent2:#22d3ee;--ok:#34d399;--warn:#fbbf24;--radius:16px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#1b1f4a55,transparent),var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a,button,input,textarea{font:inherit}
+:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+.skip{position:absolute;left:-999px;top:8px;background:#fff;color:#000;padding:8px 12px;border-radius:8px;z-index:9}
+.skip:focus{left:8px}
+/* hero */
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:32px;align-items:center;padding:56px 0 40px}
+.eyebrow{color:var(--accent2);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:.8rem}
+h1{font-size:clamp(2rem,5vw,3.4rem);line-height:1.08;margin:.3em 0}
+.sub{color:var(--muted);font-size:1.1rem;max-width:34em}
+.bullets{list-style:none;padding:0;margin:20px 0;display:grid;gap:10px}
+.bullets li{padding-left:28px;position:relative}
+.bullets li::before{content:"";position:absolute;left:0;top:.5em;width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.btn{display:inline-block;border:0;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--accent),#5b8cff);padding:14px 22px;border-radius:12px;font-weight:700;text-decoration:none;min-height:48px}
+.btn:hover{filter:brightness(1.1)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.orb{aspect-ratio:1;border-radius:28px;background:conic-gradient(from 200deg,#7c5cff,#22d3ee,#7c5cff);position:relative;box-shadow:0 0 80px #7c5cff55;display:grid;place-items:center;overflow:hidden}
+.orb::before{content:"";position:absolute;inset:14%;border-radius:50%;background:radial-gradient(circle at 30% 25%,#ffffff55,#0b0d14 65%);border:1px solid #ffffff30}
+.orb span{position:relative;font-size:clamp(2rem,6vw,3.2rem);font-weight:800;letter-spacing:.04em}
+@media (prefers-reduced-motion:no-preference){.orb{animation:float 6s ease-in-out infinite}@keyframes float{50%{transform:translateY(-8px)}}}
+/* app */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:24px;margin:0 0 20px}
+h2{margin:0 0 12px;font-size:1.4rem}
+label,legend{font-weight:600;display:block;margin-bottom:6px}
+input[type=text],input[type=number]{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-height:48px}
+fieldset{border:0;padding:0;margin:16px 0}
+.energy{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.energy input{position:absolute;opacity:0}
+.energy label{margin:0;text-align:center;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:12px 6px;cursor:pointer;min-height:48px}
+.energy input:checked+label{border-color:var(--accent2);background:#22d3ee1f}
+.energy input:focus-visible+label{outline:3px solid var(--accent2);outline-offset:2px}
+.hint{color:var(--muted);font-size:.9rem;margin:6px 0 0}
+.err{color:var(--warn);min-height:1.4em;margin:8px 0 0}
+.note{border-left:4px solid var(--warn);background:#fbbf2418;padding:10px 14px;border-radius:8px;margin:12px 0}
+.steps{padding-left:22px;margin:12px 0}
+.steps li{padding:6px 0}
+.steps li.now{color:var(--accent2);font-weight:700}
+.steps li.done{color:var(--muted);text-decoration:line-through}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:.85rem;color:var(--muted)}
+.timer{font-size:clamp(3rem,12vw,5.5rem);font-weight:800;font-variant-numeric:tabular-nums;text-align:center;margin:8px 0}
+.bar{height:10px;background:var(--panel2);border-radius:999px;overflow:hidden}
+.bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.park{display:flex;gap:10px}
+.park input{flex:1}
+ul.lot{margin:10px 0 0;padding-left:20px;color:var(--muted)}
+.hidden{display:none!important}
+footer{color:var(--muted);text-align:center;padding:30px 0 50px;font-size:.9rem}
+@media(max-width:760px){.hero{grid-template-columns:1fr;padding-top:32px}.orb{max-width:280px;margin:0 auto}}
+</style>
+</head>
+<body>
+<a class="skip" href="#app">Skip to the planner</a>
+<header class="wrap">
+  <section class="hero" aria-labelledby="hero-title">
+    <div>
+      <div class="eyebrow">FocusPulse</div>
+      <h1 id="hero-title">Focus in 25. Burn out never.</h1>
+      <p class="sub">FocusPulse reads your energy, shrinks any task into one doable sprint, and parks every distraction, so you finish more without frying your brain.</p>
+      <ul class="bullets">
+        <li><strong>Energy-matched plans:</strong> Low, Medium or High, your micro-plan fits how you actually feel.</li>
+        <li><strong>Scope-creep shield:</strong> new ideas go to a Parking Lot, not into your sprint.</li>
+        <li><strong>Honest deadlines:</strong> impossible timelines get a realistic slice, not false promises.</li>
+      </ul>
+      <a class="btn" href="#app">Start my first sprint, it's free</a>
+    </div>
+    <div class="orb" role="img" aria-label="Glowing 3D pulse orb illustration placeholder"><span>25:00</span></div>
+  </section>
+</header>
+
+<main id="app" class="wrap" tabindex="-1">
+  <section class="card" aria-labelledby="setup-title" id="setup">
+    <h2 id="setup-title">1. Tell FocusPulse about your task</h2>
+    <form id="form" novalidate>
+      <label for="task">What do you need to get done?</label>
+      <input id="task" type="text" maxlength="200" autocomplete="off" placeholder="e.g. Write the intro of my lab report" aria-describedby="task-hint err">
+      <p class="hint" id="task-hint">One task only. FocusPulse will shrink it to fit a single sprint.</p>
+      <fieldset>
+        <legend>Your energy right now</legend>
+        <div class="energy">
+          <div><input type="radio" name="energy" id="e-low" value="Low"><label for="e-low">🌙 Low</label></div>
+          <div><input type="radio" name="energy" id="e-med" value="Medium" checked><label for="e-med">⚡ Medium</label></div>
+          <div><input type="radio" name="energy" id="e-high" value="High"><label for="e-high">🔥 High</label></div>
+        </div>
+      </fieldset>
+      <label for="deadline">Minutes until your deadline <span class="pill">optional</span></label>
+      <input id="deadline" type="number" inputmode="numeric" min="0" max="10000" placeholder="e.g. 90">
+      <p class="err" id="err" role="alert"></p>
+      <button class="btn" type="submit">Get my micro-plan</button>
+    </form>
+  </section>
+
+  <section class="card hidden" id="plan-card" aria-labelledby="plan-title">
+    <h2 id="plan-title">2. Your micro-plan</h2>
+    <p><span class="pill" id="plan-energy"></span> <span class="pill" id="plan-len"></span></p>
+    <p id="plan-goal"><strong></strong></p>
+    <div class="note hidden" id="plan-note"></div>
+    <ol class="steps" id="plan-steps"></ol>
+    <p id="plan-next" class="hint"></p>
+    <p id="plan-pulse"></p>
+    <div class="row">
+      <button class="btn" id="start" type="button">Start sprint</button>
+      <button class="btn ghost" id="redo" type="button">Change inputs</button>
+    </div>
+  </section>
+
+  <section class="card hidden" id="sprint-card" aria-labelledby="sprint-title">
+    <h2 id="sprint-title">3. Sprint in progress</h2>
+    <div class="timer" id="clock" role="timer" aria-live="off">25:00</div>
+    <div class="bar" aria-hidden="true"><div id="fill"></div></div>
+    <ol class="steps" id="sprint-steps"></ol>
+    <div class="row">
+      <button class="btn" id="pause" type="button">Pause</button>
+      <button class="btn ghost" id="reset" type="button">Stop sprint</button>
+    </div>
+    <h3 style="margin:22px 0 6px">🅿️ Parking Lot</h3>
+    <p class="hint">Got a new idea mid-sprint? Park it. It will wait until after.</p>
+    <form class="park" id="park-form">
+      <label for="park-in" class="hidden">New idea to park</label>
+      <input id="park-in" type="text" maxlength="120" autocomplete="off" placeholder="Park a distraction…">
+      <button class="btn ghost" type="submit">Park it</button>
+    </form>
+    <ul class="lot" id="lot"></ul>
+  </section>
+
+  <div class="card hidden" id="done-card" role="status"></div>
+  <p class="sr hidden" id="live" role="status" aria-live="polite"></p>
+</main>
+<footer class="wrap">FocusPulse prototype · runs fully in your browser · no data leaves this page</footer>
+
+<script>
+/* PLANNER:START */
+const MAX_SPRINT = 25;
+const ENERGIES = ['Low', 'Medium', 'High'];
+const TEMPLATES = {
+  code: {
+    Low: [['Open the project and re-read the last file you touched', 3], ['Make one tiny change toward: {t}', 12], ['Run it once and jot down what happened', 10]],
+    Medium: [['Write down the 3 requirements for: {t}', 4], ['Build the core piece', 14], ['Test it and fix one thing', 7]],
+    High: [['Attack the hardest part of: {t}', 15], ['Test the edge cases', 6], ['Commit with a clear message', 4]]
+  },
+  write: {
+    Low: [['Open the doc and write one messy line about: {t}', 4], ['Draft just one section, no editing', 14], ['Skim it and mark one fix for later', 7]],
+    Medium: [['Outline the key points of: {t}', 5], ['Write a first draft of the main part', 15], ['Quick polish pass', 5]],
+    High: [['Draft the hardest section of: {t}', 15], ['Draft the next section', 7], ['Self-review for gaps', 3]]
+  },
+  read: {
+    Low: [['Gather your material and skim the headings', 4], ['Read one section and highlight 3 ideas', 13], ['Say it back in 2 sentences', 8]],
+    Medium: [['Skim headings and write 3 questions about: {t}', 4], ['Read actively and take notes', 15], ['Write a 5-line recap', 6]],
+    High: [['Tackle the toughest concept in: {t}', 12], ['Do 3 practice questions', 9], ["Write down what you still don't get", 4]]
+  },
+  general: {
+    Low: [['Clear your space and open what you need', 3], ['Do the easiest slice of: {t}', 12], ['Write the next action for your next sprint', 10]],
+    Medium: [["Define what 'done' means for this sprint: {t}", 4], ['Do the main slice', 15], ['Review it and note the next step', 6]],
+    High: [['Start with the hardest slice of: {t}', 15], ['Push through the second slice', 7], ['Wrap up and note the next step', 3]]
+  }
+};
+const PULSE = {
+  Low: 'Gentle pace. Small wins count. Start with step one.',
+  Medium: "Steady focus. You've got this.",
+  High: 'Full send. Hardest part first!'
+};
+const RE = {
+  code: /\b(code|bug|implement|build|app|function|api|debug|script|deploy|fix)\b/i,
+  write: /\b(write|essay|report|draft|assignment|notes|summary|email|blog)\b/i,
+  read: /\b(read|chapter|paper|study|revise|revision|learn|lecture|exam)\b/i,
+  big: /\b(entire|whole|all|everything|full|complete|finish)\b/i,
+  burnout: /(exhaust|burn(ed|t)?[\s-]?out|overwhelm|can'?t cope|hopeless|too much)/i
+};
+
+function classify(task) {
+  if (RE.code.test(task)) return 'code';
+  if (RE.write.test(task)) return 'write';
+  if (RE.read.test(task)) return 'read';
+  return 'general';
+}
+
+function shorten(task) {
+  const t = task.length > 60 ? task.slice(0, 57).trimEnd() + '…' : task;
+  return t;
+}
+
+function allocate(weights, total) {
+  const sum = weights.reduce((a, b) => a + b, 0);
+  const mins = weights.map(w => Math.max(1, Math.floor((w / sum) * total)));
+  let diff = total - mins.reduce((a, b) => a + b, 0);
+  let i = mins.length - 1;
+  while (diff !== 0) {
+    const step = diff > 0 ? 1 : -1;
+    if (step < 0 && mins[i] <= 1) { i = (i - 1 + mins.length) % mins.length; continue; }
+    mins[i] += step; diff -= step;
+    i = (i - 1 + mins.length) % mins.length;
+  }
+  return mins;
+}
+
+function buildPlan(rawTask, energy, deadlineMin) {
+  const task = String(rawTask || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+  if (!task) return { status: 'need_task', message: 'What is the one task you want to tackle? Type it above.' };
+  if (!ENERGIES.includes(energy)) return { status: 'need_energy', message: 'Pick your energy level: Low, Medium or High.' };
+
+  if (RE.burnout.test(task)) {
+    return {
+      status: 'burnout', energy, sprintMin: 5, task,
+      goal: 'Reset before you push.',
+      note: 'That sounds heavy. Take a 5-minute break first. No new work right now.',
+      steps: [{ text: 'Break: water, stretch, eyes off the screen', min: 5 }],
+      next: [], pulse: 'Rest is part of the work. Come back when you are ready.'
+    };
+  }
+
+  const hasDeadline = deadlineMin !== null && deadlineMin !== undefined && deadlineMin !== '' && Number.isFinite(Number(deadlineMin));
+  const dl = hasDeadline ? Math.floor(Number(deadlineMin)) : null;
+  const big = RE.big.test(task) || task.length > 120;
+  const impossible = dl !== null && (dl < 10 || (dl < MAX_SPRINT && big));
+  const sprintMin = dl === null ? MAX_SPRINT : Math.max(2, Math.min(MAX_SPRINT, dl));
+
+  const tpl = TEMPLATES[classify(task)][energy];
+  const t = shorten(task);
+  let items = tpl.map(([text, w]) => ({ text: text.replace('{t}', t), w }));
+  if (sprintMin < 6) items = [items[1]];
+  const mins = allocate(items.map(i => i.w), sprintMin);
+  const steps = items.map((it, i) => ({ text: it.text, min: mins[i] }));
+
+  const next = [];
+  if (big || impossible) next.push('Remaining parts of: ' + t);
+  let note = '';
+  if (impossible) {
+    note = 'That deadline is tight for this task. Here is the best slice that fits in ' + sprintMin + ' min. Consider cutting scope or asking for an extension. Finishing everything is not guaranteed.';
+  } else if (big) {
+    note = 'That is a big task. This sprint covers only the smallest shippable slice.';
+  }
+  return {
+    status: impossible ? 'impossible' : 'ok', energy, sprintMin, task,
+    goal: 'Sprint goal: make real progress on "' + t + '"',
+    note, steps, next, pulse: PULSE[energy]
+  };
+}
+/* PLANNER:END */
+
+/* ---------- UI ---------- */
+(function () {
+  if (typeof document === 'undefined') return;
+  const $ = id => document.getElementById(id);
+  const show = (el, on) => el.classList.toggle('hidden', !on);
+  let plan = null, endAt = 0, remaining = 0, timerId = null, paused = false;
+
+  function renderSteps(list, el) {
+    el.textContent = '';
+    plan.steps.forEach((s, i) => {
+      const li = document.createElement('li');
+      li.textContent = s.text + ' (' + s.min + ' min)';
+      li.dataset.i = i;
+      el.appendChild(li);
+    });
+  }
+
+  $('form').addEventListener('submit', e => {
+    e.preventDefault();
+    const energy = (document.querySelector('input[name=energy]:checked') || {}).value;
+    const result = buildPlan($('task').value, energy, $('deadline').value);
+    if (result.status === 'need_task' || result.status === 'need_energy') {
+      $('err').textContent = result.message;
+      $('task').focus();
+      return;
+    }
+    $('err').textContent = '';
+    plan = result;
+    $('plan-energy').textContent = plan.energy + ' energy';
+    $('plan-len').textContent = plan.sprintMin + '-minute sprint';
+    $('plan-goal').textContent = plan.goal;
+    $('plan-note').textContent = plan.note;
+    show($('plan-note'), !!plan.note);
+    renderSteps(plan.steps, $('plan-steps'));
+    $('plan-next').textContent = plan.next.length ? 'Next sprints: ' + plan.next.join('; ') : '';
+    $('plan-pulse').textContent = plan.pulse;
+    $('start').textContent = plan.status === 'burnout' ? 'Start 5-minute break' : 'Start ' + plan.sprintMin + '-min sprint';
+    show($('plan-card'), true);
+    $('plan-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('start').focus({ preventScroll: true });
+  });
+
+  $('redo').addEventListener('click', () => { show($('plan-card'), false); $('task').focus(); });
+
+  function fmt(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  }
+  function announce(msg) { const l = $('live'); l.classList.remove('hidden'); l.className = 'sr'; l.style.cssText = 'position:absolute;left:-9999px'; l.textContent = msg; }
+
+  function tick() {
+    const left = endAt - Date.now();
+    const total = plan.sprintMin * 60000;
+    $('clock').textContent = fmt(left);
+    $('fill').style.width = Math.min(100, ((total - left) / total) * 100) + '%';
+    document.title = fmt(left) + ' · FocusPulse';
+    let acc = 0;
+    const elapsed = total - left;
+    [...$('sprint-steps').children].forEach((li, i) => {
+      const start = acc; acc += plan.steps[i].min * 60000;
+      li.className = elapsed >= acc ? 'done' : (elapsed >= start ? 'now' : '');
+    });
+    if (left <= 0) finish();
+  }
+
+  function startSprint() {
+    renderSteps(plan.steps, $('sprint-steps'));
+    remaining = plan.sprintMin * 60000;
+    endAt = Date.now() + remaining;
+    paused = false;
+    $('pause').textContent = 'Pause';
+    show($('plan-card'), false); show($('setup'), false); show($('done-card'), false); show($('sprint-card'), true);
+    clearInterval(timerId);
+    timerId = setInterval(tick, 250);
+    tick();
+    announce('Sprint started. ' + plan.sprintMin + ' minutes.');
+    $('pause').focus();
+  }
+  $('start').addEventListener('click', startSprint);
+
+  $('pause').addEventListener('click', () => {
+    if (!paused) { remaining = endAt - Date.now(); clearInterval(timerId); paused = true; $('pause').textContent = 'Resume'; announce('Paused'); }
+    else { endAt = Date.now() + remaining; timerId = setInterval(tick, 250); paused = false; $('pause').textContent = 'Pause'; announce('Resumed'); }
+  });
+
+  function backToSetup() {
+    clearInterval(timerId); document.title = 'FocusPulse — Focus in 25. Burn out never.';
+    show($('sprint-card'), false); show($('setup'), true); show($('plan-card'), false);
+    $('task').focus();
+  }
+  $('reset').addEventListener('click', () => { backToSetup(); announce('Sprint stopped'); });
+
+  function finish() {
+    clearInterval(timerId);
+    document.title = 'Sprint done · FocusPulse';
+    show($('sprint-card'), false);
+    const d = $('done-card');
+    d.textContent = '';
+    const h = document.createElement('h2'); h.textContent = plan.status === 'burnout' ? 'Break complete 🌿' : 'Sprint complete 🎉';
+    const p = document.createElement('p');
+    p.textContent = plan.status === 'burnout' ? 'Nice reset. Ready to pick one small task?' : 'Take a 5-minute break before the next sprint. You earned it.';
+    const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.textContent = 'Plan next sprint';
+    b.addEventListener('click', () => { show(d, false); backToSetup(); });
+    d.append(h, p, b);
+    if ($('lot').children.length) {
+      const q = document.createElement('p'); q.className = 'hint';
+      q.textContent = 'Parked ideas are waiting: ' + $('lot').children.length;
+      d.insertBefore(q, b);
+    }
+    show(d, true);
+    announce('Sprint complete');
+    b.focus();
+  }
+
+  $('park-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const v = $('park-in').value.replace(/\s+/g, ' ').trim();
+    if (!v) return;
+    const li = document.createElement('li'); li.textContent = v;
+    $('lot').appendChild(li);
+    $('park-in').value = '';
+    announce('Parked. Back to your current step.');
+    $('park-in').focus();
+  });
+})();
+</script>
+</body>
+</html>
