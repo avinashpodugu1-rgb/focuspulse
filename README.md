@@ -31,21 +31,24 @@ Modern productivity tools often fail students and developers because they treat 
 ### 1. Landing Experience & Single-Task Input
 Clean dark-mode hero interface introducing FocusPulse's core philosophy alongside a focused single-task prompt input (`"One task only. FocusPulse will shrink it to fit a single sprint."`)[cite: 3].
 
-<img src="assets/2_landing_hero.jpg" alt="FocusPulse Landing Hero and Task Input" width="100%" />
+<img src="<img width="1200" height="627" alt="1_cover_card" src="https://github.com/user-attachments/assets/b6589e31-2679-4020-92d7-72094facbf56" />
+" alt="FocusPulse Landing Hero and Task Input" width="100%" />
 
 ---
 
 ### 2. Energy-Matched Micro-Planning (`Low` | `Medium` | `High`)
 Select your current mental energy level and optional deadline constraint. FocusPulse dynamically breaks down your task into an actionable, time-boxed 3-step micro-plan paced to match how you actually feel[cite: 2].
 
-<img src="assets/3_low_energy_plan.png" alt="Energy-Matched Micro-Plan Output" width="100%" />
+<img src="<img width="1200" height="800" alt="3_low_energy_plan" src="https://github.com/user-attachments/assets/4be1bffb-8fc6-4cf5-9e49-046f2258c9ce" />
+" alt="Energy-Matched Micro-Plan Output" width="100%" />
 
 ---
 
 ### 3. Active 25-Minute Sprint Timer & Mid-Sprint "Parking Lot"
 Once the sprint begins, a distraction-free 25:00 countdown tracks your active step while the **🅿️ Parking Lot** lets you capture sudden ideas (`"Redesign my notes template"`) without derailing your current flow state[cite: 1].
 
-<img src="assets/4_sprint_running.png" alt="Active Sprint Timer and Distraction Parking Lot" width="100%" />
+<img src="<img width="1200" height="800" alt="4_sprint_running" src="https://github.com/user-attachments/assets/d0070aa0-5e77-4b1b-a509-1d7b0f75f7b2" />
+" alt="Active Sprint Timer and Distraction Parking Lot" width="100%" />
 
 ---
 
