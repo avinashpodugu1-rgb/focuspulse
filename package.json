@@ -1,0 +1,16 @@
+{
+  "name": "focuspulse",
+  "version": "1.0.0",
+  "description": "FocusPulse: energy-aware 25-minute sprint planner (single-file web app)",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}
