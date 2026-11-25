@@ -1,5 +1,7 @@
 <div align="center">
 
+<img width="1200" height="627" alt="FocusPulse Cover Card" src="https://github.com/user-attachments/assets/b6589e31-2679-4020-92d7-72094facbf56" />
+
 # ⚡ FocusPulse
 ### Focus in 25. Burn out never.
 
@@ -20,43 +22,34 @@
 
 Modern productivity tools often fail students and developers because they treat every hour of the day as equal—leading to over-scoped to-do lists, constant context switching, and cognitive burnout. 
 
-**FocusPulse** solves this by adapting to your real-time mental bandwidth. Built in a **45-minute AI + prompt engineering sprint**, it scopes a single task down into an achievable **25-minute micro-sprint** calibrated to your current energy level, while actively shielding your focus from mid-sprint distractions[cite: 1, 2, 4].
+**FocusPulse** solves this by adapting to your real-time mental bandwidth. Built in a **45-minute AI + prompt engineering sprint**, it scopes a single task down into an achievable **25-minute micro-sprint** calibrated to your current energy level, while actively shielding your focus from mid-sprint distractions.
 
 ---
 
 ## 🖼️ Product Walkthrough & Screenshots
 
-### 1. Landing Experience & Single-Task Input
-Clean dark-mode hero interface introducing FocusPulse's core philosophy alongside a focused single-task prompt input (`"One task only. FocusPulse will shrink it to fit a single sprint."`)[cite: 3].
+### 1. Energy-Matched Micro-Planning (`Low` | `Medium` | `High`)
+Select your current mental energy level and optional deadline constraint. FocusPulse dynamically breaks down your task into an actionable, time-boxed 3-step micro-plan paced to match how you actually feel.
 
-<img src="<img width="1200" height="627" alt="1_cover_card" src="https://github.com/user-attachments/assets/b6589e31-2679-4020-92d7-72094facbf56" />
-" alt="FocusPulse Landing Hero and Task Input" width="100%" />
-
----
-
-### 2. Energy-Matched Micro-Planning (`Low` | `Medium` | `High`)
-Select your current mental energy level and optional deadline constraint. FocusPulse dynamically breaks down your task into an actionable, time-boxed 3-step micro-plan paced to match how you actually feel[cite: 2].
-
-<img src="<img width="1200" height="800" alt="3_low_energy_plan" src="https://github.com/user-attachments/assets/4be1bffb-8fc6-4cf5-9e49-046f2258c9ce" />
-" alt="Energy-Matched Micro-Plan Output" width="100%" />
+<img width="1200" height="800" alt="Energy-Matched Micro-Plan Output" src="https://github.com/user-attachments/assets/4be1bffb-8fc6-4cf5-9e49-046f2258c9ce" />
 
 ---
 
-### 3. Active 25-Minute Sprint Timer & Mid-Sprint "Parking Lot"
-Once the sprint begins, a distraction-free 25:00 countdown tracks your active step while the **🅿️ Parking Lot** lets you capture sudden ideas (`"Redesign my notes template"`) without derailing your current flow state[cite: 1].
+### 2. Active 25-Minute Sprint Timer & Mid-Sprint "Parking Lot"
+Once the sprint begins, a distraction-free 25:00 countdown tracks your active step while the **🅿️ Parking Lot** lets you capture sudden ideas (`"Redesign my notes template"`) without derailing your current flow state.
+<img width="1200" height="800" alt="4_sprint_running" src="https://github.com/user-attachments/assets/051990a0-f5eb-4752-a48d-ec1001cd0715" />
 
-<img src="<img width="1200" height="800" alt="4_sprint_running" src="https://github.com/user-attachments/assets/d0070aa0-5e77-4b1b-a509-1d7b0f75f7b2" />
-" alt="Active Sprint Timer and Distraction Parking Lot" width="100%" />
+
 
 ---
 
 ## ✨ Core Features
 
-* **🔋 Energy-Aware Micro-Planning (`Low` | `Medium` | `High`):** Dynamically adjusts task scoping, pacing, and encouragement based on your real-time energy state[cite: 2, 3].
-* **⏳ Honest Deadline Calibration:** Evaluates optional deadline constraints (in minutes) and slices ambitious tasks into realistic deliverables rather than false promises[cite: 2, 3].
+* **🔋 Energy-Aware Micro-Planning (`Low` | `Medium` | `High`):** Dynamically adjusts task scoping, pacing, and encouragement based on your real-time energy state.
+* **⏳ Honest Deadline Calibration:** Evaluates optional deadline constraints (in minutes) and slices ambitious tasks into realistic deliverables rather than false promises.
 * **⏱️ Distraction-Free 25-Minute Sprint Timer:** Clean execution timer (`Start`, `Pause`, `Stop`) paired with step-by-step time allocations (`4 min` → `14 min` → `7 min`).
-* **🅿️ Mid-Sprint "Parking Lot" (Scope-Creep Shield):** Offloads intrusive thoughts and side ideas mid-sprint so they wait until after your session[cite: 1, 3].
-* **🔒 Privacy-First & Zero-Latency:** Runs 100% client-side in the browser with zero external runtime dependencies and zero user data leaving the page[cite: 1, 2].
+* **🅿️ Mid-Sprint "Parking Lot" (Scope-Creep Shield):** Offloads intrusive thoughts and side ideas mid-sprint so they wait until after your session.
+* **🔒 Privacy-First & Zero-Latency:** Runs 100% client-side in the browser with zero external runtime dependencies and zero user data leaving the page.
 
 ---
 
@@ -66,10 +59,9 @@ This repository houses the end-to-end **Vibe-to-Product Launch Sprint**, bridgin
 
 | File / Path | Component | Description |
 | :--- | :--- | :--- |
-| **[`index.html`](index.html)** | **Core Web Application** *(Task B)* | Single-file, responsive web app containing the hero interface, energy-aware micro-planner engine, 25-minute sprint timer, and interactive Parking Lot[cite: 1, 2, 3]. |
+| **[`index.html`](index.html)** | **Core Web Application** *(Task B)* | Single-file, responsive web app containing the hero interface, energy-aware micro-planner engine, 25-minute sprint timer, and interactive Parking Lot. |
 | **[`system_prompt.md`](system_prompt.md)** | **AI System Prompt** *(Task A)* | Production-grade, constraint-tested AI system prompt engineered at **240 words** (strictly optimized under a 250-word token budget). |
 | **[`hero_copy_and_image_prompt.md`](hero_copy_and_image_prompt.md)** | **Product Copy & Visual Direction** *(Task C)* | High-converting landing page hero copy paired with a structured 3D dark-mode image-generation prompt for brand visual assets. |
-| **`assets/`** | **Visual Media & UI Captures** | Cover card (`1_cover_card.jpg`) and full end-to-end UI walkthrough screenshots (`2_landing_hero.jpg`, `3_low_energy_plan.png`, `4_sprint_running.png`)[cite: 1, 2, 3, 4]. |
 
 ---
 
