@@ -8,8 +8,10 @@
 Open `index.html` in any browser. No build step, no dependencies, no network calls.
 
 ```
-npm install   # test dependency only (jsdom)
-npm test      # 29 unit + UI tests
+npm install     # dev tooling only (jsdom, ESLint)
+npm test        # 31 unit + UI tests
+npm run lint    # ESLint over index.html and tests
+npm run check   # lint + tests
 ```
 
 ## Repository layout
@@ -21,7 +23,9 @@ npm test      # 29 unit + UI tests
 | `prompts.md` | Exact prompts used and the iteration chain (prompt transparency) |
 | `tests/planner.test.js` | Unit tests for the planning logic, including invariants over every energy × task × deadline combination |
 | `tests/ui.test.js` | UI tests that drive the real `index.html` in jsdom (form, timer, Parking Lot, accessibility, security markup) |
-| `.github/workflows/ci.yml` | Runs the tests on every push |
+| `eslint.config.js`, `.editorconfig` | Lint rules (incl. the JS inside `index.html`) and editor consistency |
+| `.github/workflows/ci.yml` | Runs lint and tests on every push |
+| `Dockerfile` | Serves `index.html` with nginx on port 8080 (Cloud Run ready) |
 
 ## Approach and logic
 1. **Energy → strategy.** Low gets a gentle tone and 3 tiny steps starting with a 3-minute setup win. Medium gets a plan/build/check rhythm. High attacks the hardest part first.
@@ -36,14 +40,14 @@ npm test      # 29 unit + UI tests
 4. At the end you get a break prompt and your parked ideas are waiting.
 
 ## Architecture (inside `index.html`)
-- **Planner** (pure functions, no DOM): `buildPlan`, `allocate`, `classify`, `parseDeadline`. Named constants, frozen templates and JSDoc. Testable on its own.
-- **UI** (one IIFE): cached element lookups, a single `state` object, small focused handlers. The single-file requirement is kept, but the planner and UI are clearly separated.
+- **Core** (pure functions, no DOM): `buildPlan` (composed from `buildBreakPlan`, `buildNote`, `allocate`, `classify`, `parseDeadline`), plus `activeStepIndex` and `formatClock`. Named constants, frozen templates, JSDoc typedefs. Tested on its own.
+- **UI** (one IIFE): cached element lookups, a `setView` switcher, and small single-purpose functions (`readForm`, `renderPlan`, `updateClock`, `updateActiveStep`, `togglePause`, `buildDoneCard`, `onParkIdea`). The single-file requirement is kept, but core and UI are clearly separated.
 
 ## Quality notes
-- **Code quality:** separated logic/UI, named constants instead of magic numbers, JSDoc on public functions, no duplicated helpers, consistent naming.
+- **Code quality:** core/UI separation, short single-purpose functions, named constants instead of magic numbers, JSDoc typedefs, `'use strict'`, ESLint (`no-var`, `prefer-const`, `eqeqeq`, `no-shadow`, `no-unused-vars`) enforced in CI, `.editorconfig`.
 - **Security:** strict Content-Security-Policy (`default-src 'none'`), no external resources, no `innerHTML`/`eval`, all user text written with `textContent`, input length caps, no storage and no network. Tests enforce these rules.
 - **Efficiency:** timer is wall-clock based (accurate even if the tab is throttled), the DOM is written only when the displayed second or active step changes, the progress bar uses a GPU-friendly `transform`, no libraries.
-- **Testing:** 29 automated tests, run in CI. They found and fixed a real edge case (minute allocation for deadlines shorter than the number of steps).
+- **Testing:** 31 automated tests, run in CI. They found and fixed a real edge case (minute allocation for deadlines shorter than the number of steps).
 - **Accessibility:** every control has a programmatic label (including the visually hidden Parking Lot label), fieldset/legend for energy, visible focus rings, skip link, `role="timer"`, polite live-region announcements, `aria-invalid` on errors, reduced-motion support, 48px touch targets, dark theme with high-contrast text, `noscript` message.
 
 ## Assumptions

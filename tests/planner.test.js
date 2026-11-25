@@ -9,8 +9,8 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const block = html.match(/\/\* PLANNER:START \*\/([\s\S]*?)\/\* PLANNER:END \*\//);
 assert.ok(block, 'planner block markers not found in index.html');
 const ctx = vm.createContext({});
-vm.runInContext(block[1] + '\nthis.api = { buildPlan, allocate, classify, parseDeadline, ENERGIES, TEMPLATES };', ctx);
-const { buildPlan, allocate, classify, parseDeadline, ENERGIES, TEMPLATES } = ctx.api;
+vm.runInContext(block[1] + '\nthis.api = { buildPlan, allocate, classify, parseDeadline, activeStepIndex, formatClock, ENERGIES, TEMPLATES };', ctx);
+const { buildPlan, allocate, classify, parseDeadline, activeStepIndex, formatClock, ENERGIES, TEMPLATES } = ctx.api;
 
 const total = plan => plan.steps.reduce((a, s) => a + s.min, 0);
 
@@ -141,5 +141,21 @@ describe('allocate', () => {
     for (const t of [2, 3, 7, 11, 25]) {
       assert.strictEqual(allocate([3, 12, 10], t).reduce((a, b) => a + b, 0), t);
     }
+  });
+});
+
+describe('timer helpers', () => {
+  const steps = [{ text: 'a', min: 4 }, { text: 'b', min: 14 }, { text: 'c', min: 7 }];
+  test('activeStepIndex follows elapsed time and ends at steps.length', () => {
+    assert.strictEqual(activeStepIndex(steps, 0), 0);
+    assert.strictEqual(activeStepIndex(steps, 4 * 60000 - 1), 0);
+    assert.strictEqual(activeStepIndex(steps, 4 * 60000), 1);
+    assert.strictEqual(activeStepIndex(steps, 18 * 60000), 2);
+    assert.strictEqual(activeStepIndex(steps, 25 * 60000), 3);
+  });
+  test('formatClock pads minutes and seconds', () => {
+    assert.strictEqual(formatClock(1500), '25:00');
+    assert.strictEqual(formatClock(65), '01:05');
+    assert.strictEqual(formatClock(0), '00:00');
   });
 });

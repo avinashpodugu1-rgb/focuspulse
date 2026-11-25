@@ -155,10 +155,13 @@ footer{color:var(--muted);text-align:center;padding:30px 0 50px;font-size:.9rem}
 <footer class="wrap">FocusPulse prototype · runs fully in your browser · no data leaves this page</footer>
 
 <script>
+'use strict';
+
 /* ==========================================================================
-   1. PLANNER — pure logic, no DOM. Mirrors the rules in system_prompt.md.
+   1. CORE — pure logic, no DOM. Mirrors the rules in system_prompt.md.
    ========================================================================== */
 /* PLANNER:START */
+const MS_PER_MIN = 60000;
 const MAX_SPRINT_MIN = 25;
 const BREAK_MIN = 5;
 const MIN_SPRINT_MIN = 2;
@@ -167,6 +170,15 @@ const IMPOSSIBLE_BELOW_MIN = 10;
 const MAX_TASK_LEN = 200;
 const MAX_DEADLINE_MIN = 10000;
 const ENERGIES = Object.freeze(['Low', 'Medium', 'High']);
+
+/**
+ * @typedef {{text: string, min: number}} Step
+ * @typedef {{
+ *   status: 'ok'|'impossible'|'burnout'|'need_task'|'need_energy',
+ *   message?: string, energy?: string, task?: string, sprintMin?: number,
+ *   goal?: string, note?: string, steps?: Step[], next?: string[], pulse?: string
+ * }} Plan
+ */
 
 /** Step templates as [text, weight]. `{t}` is replaced by the (shortened) task. */
 const TEMPLATES = Object.freeze({
@@ -228,6 +240,9 @@ function parseDeadline(value) {
 /**
  * Split `total` minutes across steps by weight; the sum is always exact.
  * Every step gets >= 1 minute unless there are fewer minutes than steps.
+ * @param {number[]} weights
+ * @param {number} total
+ * @returns {number[]}
  */
 function allocate(weights, total) {
   if (total < weights.length) return weights.map((_, i) => (i < total ? 1 : 0));
@@ -243,29 +258,38 @@ function allocate(weights, total) {
   return mins;
 }
 
+/** @returns {Plan} a one-step "take a break" plan. */
+function buildBreakPlan(task, energy) {
+  return {
+    status: 'burnout', energy, task, sprintMin: BREAK_MIN,
+    goal: 'Reset before you push.',
+    note: 'That sounds heavy. Take a 5-minute break first. No new work right now.',
+    steps: [{ text: 'Break: water, stretch, eyes off the screen', min: BREAK_MIN }],
+    next: [], pulse: 'Rest is part of the work. Come back when you are ready.'
+  };
+}
+
+/** @returns {string} the warning shown when a deadline is too tight or the task too big. */
+function buildNote({ impossible, big, sprintMin }) {
+  if (impossible) {
+    return 'That deadline is tight for this task. Here is the best slice that fits in ' + sprintMin +
+      ' min. Consider cutting scope or asking for an extension. Finishing everything is not guaranteed.';
+  }
+  return big ? 'That is a big task. This sprint covers only the smallest shippable slice.' : '';
+}
+
 /**
  * Build one sprint plan.
  * @param {string} rawTask
  * @param {'Low'|'Medium'|'High'} energy
  * @param {number|string|null} [deadlineMin] minutes until the deadline (optional)
- * @returns {{status:'ok'|'impossible'|'burnout'|'need_task'|'need_energy', message?:string,
- *   energy?:string, sprintMin?:number, task?:string, goal?:string, note?:string,
- *   steps?:{text:string,min:number}[], next?:string[], pulse?:string}}
+ * @returns {Plan}
  */
 function buildPlan(rawTask, energy, deadlineMin) {
   const task = String(rawTask || '').replace(/\s+/g, ' ').trim().slice(0, MAX_TASK_LEN);
   if (!task) return { status: 'need_task', message: 'What is the one task you want to tackle? Type it above.' };
   if (!ENERGIES.includes(energy)) return { status: 'need_energy', message: 'Pick your energy level: Low, Medium or High.' };
-
-  if (PATTERNS.burnout.test(task)) {
-    return {
-      status: 'burnout', energy, task, sprintMin: BREAK_MIN,
-      goal: 'Reset before you push.',
-      note: 'That sounds heavy. Take a 5-minute break first. No new work right now.',
-      steps: [{ text: 'Break: water, stretch, eyes off the screen', min: BREAK_MIN }],
-      next: [], pulse: 'Rest is part of the work. Come back when you are ready.'
-    };
-  }
+  if (PATTERNS.burnout.test(task)) return buildBreakPlan(task, energy);
 
   const deadline = parseDeadline(deadlineMin);
   const big = PATTERNS.big.test(task) || task.length > 120;
@@ -276,24 +300,36 @@ function buildPlan(rawTask, energy, deadlineMin) {
   const label = shorten(task);
   let items = TEMPLATES[classify(task)][energy].map(([text, weight]) => ({ text: text.replace('{t}', label), weight }));
   if (sprintMin < SINGLE_STEP_BELOW_MIN) items = [items[1]];
-  const mins = allocate(items.map(i => i.weight), sprintMin);
-
-  let note = '';
-  if (impossible) {
-    note = 'That deadline is tight for this task. Here is the best slice that fits in ' + sprintMin +
-      ' min. Consider cutting scope or asking for an extension. Finishing everything is not guaranteed.';
-  } else if (big) {
-    note = 'That is a big task. This sprint covers only the smallest shippable slice.';
-  }
+  const mins = allocate(items.map(item => item.weight), sprintMin);
 
   return {
     status: impossible ? 'impossible' : 'ok', energy, task, sprintMin,
     goal: 'Sprint goal: make real progress on "' + label + '"',
-    note,
-    steps: items.map((it, i) => ({ text: it.text, min: mins[i] })),
+    note: buildNote({ impossible, big, sprintMin }),
+    steps: items.map((item, i) => ({ text: item.text, min: mins[i] })),
     next: big || impossible ? ['Remaining parts of: ' + label] : [],
     pulse: PULSE[energy]
   };
+}
+
+/**
+ * Index of the step in progress after `elapsedMs`; equals steps.length once all are done.
+ * @param {Step[]} steps
+ * @param {number} elapsedMs
+ */
+function activeStepIndex(steps, elapsedMs) {
+  let end = 0;
+  for (let i = 0; i < steps.length; i++) {
+    end += steps[i].min * MS_PER_MIN;
+    if (elapsedMs < end) return i;
+  }
+  return steps.length;
+}
+
+/** @param {number} totalSec @returns {string} e.g. "24:05" */
+function formatClock(totalSec) {
+  const pad = n => String(n).padStart(2, '0');
+  return pad(Math.floor(totalSec / 60)) + ':' + pad(totalSec % 60);
 }
 /* PLANNER:END */
 
@@ -305,174 +341,196 @@ function buildPlan(rawTask, energy, deadlineMin) {
   if (typeof document === 'undefined') return;
 
   const TICK_MS = 500;
-  const $ = id => document.getElementById(id);
-  const el = Object.fromEntries(
-    ['form', 'task', 'deadline', 'err', 'setup', 'plan-card', 'plan-energy', 'plan-len', 'plan-goal', 'plan-note',
-      'plan-steps', 'plan-next', 'plan-pulse', 'start', 'redo', 'sprint-card', 'clock', 'fill', 'sprint-steps',
-      'pause', 'reset', 'park-form', 'park-in', 'lot', 'done-card', 'live'].map(id => [id, $(id)])
-  );
-  const show = (node, on) => node.classList.toggle('hidden', !on);
-  const announce = msg => { el.live.textContent = msg; };
-  const scrollToNode = node => { if (node.scrollIntoView) node.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  const TITLE = 'FocusPulse — Focus in 25. Burn out never.';
+  const VIEWS = ['setup', 'plan-card', 'sprint-card', 'done-card'];
+  const ELEMENT_IDS = [
+    'form', 'task', 'deadline', 'err', 'plan-energy', 'plan-len', 'plan-goal', 'plan-note',
+    'plan-steps', 'plan-next', 'plan-pulse', 'start', 'redo', 'clock', 'fill', 'sprint-steps',
+    'pause', 'reset', 'park-form', 'park-in', 'lot', 'live'
+  ].concat(VIEWS);
 
-  const state = { plan: null, endAt: 0, remainingMs: 0, intervalId: null, paused: false, shownSec: -1, activeStep: -1, stepEls: [] };
+  const el = Object.fromEntries(ELEMENT_IDS.map(id => [id, document.getElementById(id)]));
+  const timer = { intervalId: null, endAt: 0, remainingMs: 0, paused: false, shownSec: -1, activeStep: -1, stepEls: [] };
+  let currentPlan = null;
 
-  const formatClock = totalSec =>
-    String(Math.floor(totalSec / 60)).padStart(2, '0') + ':' + String(totalSec % 60).padStart(2, '0');
+  /* ----- small DOM helpers ----- */
+  const announce = message => { el.live.textContent = message; };
 
-  function renderSteps(target) {
-    const items = state.plan.steps.map((s, i) => {
-      const li = document.createElement('li');
-      li.textContent = s.text + ' (' + s.min + ' min)';
-      li.dataset.index = i;
-      return li;
-    });
+  /** Show only the named top-level views and hide the rest. */
+  function setView(...visible) {
+    VIEWS.forEach(id => el[id].classList.toggle('hidden', !visible.includes(id)));
+  }
+
+  function createElement(tag, text, className) {
+    const node = document.createElement(tag);
+    node.textContent = text;
+    if (className) node.className = className;
+    return node;
+  }
+
+  function renderSteps(target, steps) {
+    const items = steps.map(step => createElement('li', step.text + ' (' + step.min + ' min)'));
     target.replaceChildren(...items);
     return items;
   }
 
-  /* ----- Step 1: build the plan ----- */
-  el.form.addEventListener('submit', event => {
-    event.preventDefault();
-    const energy = (document.querySelector('input[name=energy]:checked') || {}).value;
-    const plan = buildPlan(el.task.value, energy, el.deadline.value);
-    if (plan.status === 'need_task' || plan.status === 'need_energy') {
-      el.err.textContent = plan.message;
-      el.task.setAttribute('aria-invalid', 'true');
-      el.task.focus();
-      return;
-    }
+  /* ----- plan form ----- */
+  function readForm() {
+    const checked = document.querySelector('input[name=energy]:checked');
+    return { task: el.task.value, energy: checked ? checked.value : '', deadline: el.deadline.value };
+  }
+
+  function showFormError(message) {
+    el.err.textContent = message;
+    el.task.setAttribute('aria-invalid', 'true');
+    el.task.focus();
+  }
+
+  function clearFormError() {
     el.err.textContent = '';
     el.task.removeAttribute('aria-invalid');
-    state.plan = plan;
+  }
 
+  function renderPlan(plan) {
     el['plan-energy'].textContent = plan.energy + ' energy';
     el['plan-len'].textContent = plan.sprintMin + '-minute sprint';
     el['plan-goal'].textContent = plan.goal;
     el['plan-note'].textContent = plan.note;
-    show(el['plan-note'], Boolean(plan.note));
-    renderSteps(el['plan-steps']);
+    el['plan-note'].classList.toggle('hidden', !plan.note);
+    renderSteps(el['plan-steps'], plan.steps);
     el['plan-next'].textContent = plan.next.length ? 'Next sprints: ' + plan.next.join('; ') : '';
     el['plan-pulse'].textContent = plan.pulse;
     el.start.textContent = plan.status === 'burnout' ? 'Start 5-minute break' : 'Start ' + plan.sprintMin + '-min sprint';
-    show(el['plan-card'], true);
-    scrollToNode(el['plan-card']);
+  }
+
+  function onSubmitPlan(event) {
+    event.preventDefault();
+    const { task, energy, deadline } = readForm();
+    const plan = buildPlan(task, energy, deadline);
+    if (plan.status === 'need_task' || plan.status === 'need_energy') {
+      showFormError(plan.message);
+      return;
+    }
+    clearFormError();
+    currentPlan = plan;
+    renderPlan(plan);
+    setView('setup', 'plan-card');
+    if (el['plan-card'].scrollIntoView) el['plan-card'].scrollIntoView({ behavior: 'smooth', block: 'start' });
     el.start.focus({ preventScroll: true });
-  });
+  }
 
-  el.redo.addEventListener('click', () => { show(el['plan-card'], false); el.task.focus(); });
-
-  /* ----- Step 2: countdown timer (clock-based, DOM touched only on change) ----- */
-  function tick() {
-    const { plan } = state;
-    const totalMs = plan.sprintMin * 60000;
-    const leftMs = Math.max(0, state.endAt - Date.now());
+  /* ----- countdown timer (clock-based; DOM is touched only when something changes) ----- */
+  function updateClock(leftMs, totalMs) {
     const leftSec = Math.ceil(leftMs / 1000);
+    if (leftSec === timer.shownSec) return;
+    timer.shownSec = leftSec;
+    const text = formatClock(leftSec);
+    el.clock.textContent = text;
+    document.title = text + ' · FocusPulse';
+    el.fill.style.transform = 'scaleX(' + Math.min(1, (totalMs - leftMs) / totalMs).toFixed(4) + ')';
+  }
 
-    if (leftSec !== state.shownSec) {
-      state.shownSec = leftSec;
-      const text = formatClock(leftSec);
-      el.clock.textContent = text;
-      document.title = text + ' · FocusPulse';
-      el.fill.style.transform = 'scaleX(' + Math.min(1, (totalMs - leftMs) / totalMs).toFixed(4) + ')';
-    }
+  function updateActiveStep(elapsedMs) {
+    const active = activeStepIndex(currentPlan.steps, elapsedMs);
+    if (active === timer.activeStep) return;
+    timer.activeStep = active;
+    timer.stepEls.forEach((li, i) => { li.className = i < active ? 'done' : (i === active ? 'now' : ''); });
+  }
 
-    const elapsed = totalMs - leftMs;
-    let acc = 0, active = plan.steps.length;
-    for (let i = 0; i < plan.steps.length; i++) {
-      acc += plan.steps[i].min * 60000;
-      if (elapsed < acc) { active = i; break; }
-    }
-    if (active !== state.activeStep) {
-      state.activeStep = active;
-      state.stepEls.forEach((li, i) => { li.className = i < active ? 'done' : (i === active ? 'now' : ''); });
-    }
-    if (leftMs <= 0) finish();
+  function tick() {
+    const totalMs = currentPlan.sprintMin * MS_PER_MIN;
+    const leftMs = Math.max(0, timer.endAt - Date.now());
+    updateClock(leftMs, totalMs);
+    updateActiveStep(totalMs - leftMs);
+    if (leftMs <= 0) finishSprint();
+  }
+
+  function runTimer() {
+    clearInterval(timer.intervalId);
+    timer.intervalId = setInterval(tick, TICK_MS);
   }
 
   function startSprint() {
-    state.stepEls = renderSteps(el['sprint-steps']);
-    state.remainingMs = state.plan.sprintMin * 60000;
-    state.endAt = Date.now() + state.remainingMs;
-    state.paused = false;
-    state.shownSec = -1;
-    state.activeStep = -1;
+    timer.stepEls = renderSteps(el['sprint-steps'], currentPlan.steps);
+    timer.remainingMs = currentPlan.sprintMin * MS_PER_MIN;
+    timer.endAt = Date.now() + timer.remainingMs;
+    timer.paused = false;
+    timer.shownSec = -1;
+    timer.activeStep = -1;
     el.pause.textContent = 'Pause';
-    show(el['plan-card'], false); show(el.setup, false); show(el['done-card'], false); show(el['sprint-card'], true);
-    clearInterval(state.intervalId);
-    state.intervalId = setInterval(tick, TICK_MS);
+    setView('sprint-card');
+    runTimer();
     tick();
-    announce('Sprint started. ' + state.plan.sprintMin + ' minutes.');
+    announce('Sprint started. ' + currentPlan.sprintMin + ' minutes.');
     el.pause.focus();
   }
-  el.start.addEventListener('click', startSprint);
 
-  el.pause.addEventListener('click', () => {
-    if (state.paused) {
-      state.endAt = Date.now() + state.remainingMs;
-      state.intervalId = setInterval(tick, TICK_MS);
-      state.paused = false;
-      el.pause.textContent = 'Pause';
-      announce('Resumed');
+  function togglePause() {
+    if (timer.paused) {
+      timer.endAt = Date.now() + timer.remainingMs;
+      runTimer();
     } else {
-      state.remainingMs = state.endAt - Date.now();
-      clearInterval(state.intervalId);
-      state.paused = true;
-      el.pause.textContent = 'Resume';
-      announce('Paused');
+      timer.remainingMs = timer.endAt - Date.now();
+      clearInterval(timer.intervalId);
     }
-  });
+    timer.paused = !timer.paused;
+    el.pause.textContent = timer.paused ? 'Resume' : 'Pause';
+    announce(timer.paused ? 'Paused' : 'Resumed');
+  }
 
   function backToSetup() {
-    clearInterval(state.intervalId);
-    document.title = 'FocusPulse — Focus in 25. Burn out never.';
-    show(el['sprint-card'], false); show(el['plan-card'], false); show(el['done-card'], false); show(el.setup, true);
+    clearInterval(timer.intervalId);
+    document.title = TITLE;
+    setView('setup');
     el.task.focus();
   }
-  el.reset.addEventListener('click', () => { backToSetup(); announce('Sprint stopped'); });
 
-  function finish() {
-    clearInterval(state.intervalId);
+  function stopSprint() {
+    backToSetup();
+    announce('Sprint stopped');
+  }
+
+  function buildDoneCard(wasBreak, parkedCount) {
+    const nextButton = createElement('button', 'Plan next sprint', 'btn');
+    nextButton.type = 'button';
+    nextButton.addEventListener('click', backToSetup);
+    const nodes = [
+      createElement('h2', wasBreak ? 'Break complete 🌿' : 'Sprint complete 🎉'),
+      createElement('p', wasBreak ? 'Nice reset. Ready to pick one small task?' : 'Take a 5-minute break before the next sprint. You earned it.')
+    ];
+    if (parkedCount) nodes.push(createElement('p', 'Parked ideas are waiting: ' + parkedCount, 'hint'));
+    nodes.push(nextButton);
+    return { nodes, nextButton };
+  }
+
+  function finishSprint() {
+    clearInterval(timer.intervalId);
     document.title = 'Sprint done · FocusPulse';
-    show(el['sprint-card'], false);
-
-    const wasBreak = state.plan.status === 'burnout';
-    const heading = document.createElement('h2');
-    heading.textContent = wasBreak ? 'Break complete 🌿' : 'Sprint complete 🎉';
-    const message = document.createElement('p');
-    message.textContent = wasBreak ? 'Nice reset. Ready to pick one small task?' : 'Take a 5-minute break before the next sprint. You earned it.';
-    const next = document.createElement('button');
-    next.className = 'btn';
-    next.type = 'button';
-    next.textContent = 'Plan next sprint';
-    next.addEventListener('click', backToSetup);
-
-    const parts = [heading, message];
-    if (el.lot.children.length) {
-      const parked = document.createElement('p');
-      parked.className = 'hint';
-      parked.textContent = 'Parked ideas are waiting: ' + el.lot.children.length;
-      parts.push(parked);
-    }
-    parts.push(next);
-    el['done-card'].replaceChildren(...parts);
-    show(el['done-card'], true);
+    const { nodes, nextButton } = buildDoneCard(currentPlan.status === 'burnout', el.lot.children.length);
+    el['done-card'].replaceChildren(...nodes);
+    setView('done-card');
     announce('Sprint complete');
-    next.focus();
+    nextButton.focus();
   }
 
   /* ----- Parking Lot ----- */
-  el['park-form'].addEventListener('submit', event => {
+  function onParkIdea(event) {
     event.preventDefault();
     const idea = el['park-in'].value.replace(/\s+/g, ' ').trim();
     if (!idea) return;
-    const li = document.createElement('li');
-    li.textContent = idea;
-    el.lot.appendChild(li);
+    el.lot.appendChild(createElement('li', idea));
     el['park-in'].value = '';
     announce('Parked. Back to your current step.');
     el['park-in'].focus();
-  });
+  }
+
+  /* ----- wiring ----- */
+  el.form.addEventListener('submit', onSubmitPlan);
+  el.redo.addEventListener('click', () => { setView('setup'); el.task.focus(); });
+  el.start.addEventListener('click', startSprint);
+  el.pause.addEventListener('click', togglePause);
+  el.reset.addEventListener('click', stopSprint);
+  el['park-form'].addEventListener('submit', onParkIdea);
 })();
 </script>
 </body>
